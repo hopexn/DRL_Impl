@@ -4,8 +4,6 @@ import gym
 import keras.backend.tensorflow_backend as KTF
 import tensorflow as tf
 
-from ddpg.DDPGAgent import DDPGAgent
-
 # 指定第一块GPU可用
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
@@ -24,14 +22,17 @@ print("Action space: {}".format(env.action_space.shape))
 nb_actions = env.action_space.shape[0]
 observation_shape = env.observation_space.shape
 
-agent = DDPGAgent(env.action_space, env.observation_space, nb_steps_warmup=2000)
+from td3.TD3Agent import TD3Agent
+agent = TD3Agent(env.action_space, env.observation_space, nb_steps_warmup=2000)
+
+# from ddpg.DDPGAgent import DDPGAgent
+# agent = DDPGAgent(env.action_space, env.observation_space, nb_steps_warmup=2000)
 
 print("Start training~")
 for episode in range(100):
     episode_rewards = 0
     observation = env.reset()
     observation = observation.reshape(observation_shape)
-    agent.random_process.reset_states()
     
     for step in range(200):
         action = agent.forward(observation)
@@ -55,13 +56,13 @@ for episode in range(20):
     episode_rewards = 0
     observation = env.reset()
     observation = observation.reshape(observation_shape)
-    agent.random_process.reset_states()
     
     for step in range(200):
         env.render()
         action = agent.forward(observation)
         
         next_observation, reward, terminal, _ = env.step(action)
+        next_observation = next_observation.reshape(observation_shape)
         
         episode_rewards += reward
         observation = next_observation

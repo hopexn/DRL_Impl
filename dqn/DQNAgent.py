@@ -1,27 +1,32 @@
 import tensorflow as tf
 
 from core.agent import Agent
-from core.memory import Memory
+from core.memory_np import Memory
 from core.policies import *
 
 
 class DQNAgent(Agent):
     
     def __init__(self,
-                 nb_actions,
-                 observation_shape,
+                 action_space,
+                 observation_space,
                  gamma=0.99,
                  target_model_update=100):
         super().__init__()
         self.gamma = gamma
-        self.nb_actions = nb_actions
-        self.observation_shape = observation_shape
+        self.action_space = action_space
+        self.observation_space = observation_space
+        
+        self.nb_actions = action_space.n
+        self.action_shape = (1,)
+        self.observation_shape = observation_space.shape
         self.target_model_update = target_model_update
         
-        self.memory = Memory()
+        self.memory = Memory(capacity=10000, action_shape=self.action_shape,
+                             observation_shape=self.observation_shape)
         
-        self.model = self._build_network(nb_actions, observation_shape)
-        self.target_model = self._build_network(nb_actions, observation_shape)
+        self.model = self._build_network()
+        self.target_model = self._build_network()
         self.target_model.set_weights(self.model.get_weights())
         
         self.update_count = 0
@@ -49,8 +54,8 @@ class DQNAgent(Agent):
         
         q_values = self.model.predict(observations)
         
-        target_q_values = np.max(self.target_model.predict(next_observations), axis=1)
-        q_values[actions] = rewards + self.gamma * target_q_values * (~terminals)
+        target_q_values = np.max(self.target_model.predict(next_observations), axis=1, keepdims=True)
+        q_values[actions, np.newaxis] = rewards + self.gamma * target_q_values * (~terminals)
         
         self.model.fit(observations, q_values, verbose=0)
         
