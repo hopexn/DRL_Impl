@@ -60,3 +60,5 @@ for episode in range(20):
         env.render()
     
     print("Episode {}: {}".format(episode, episode_rewards))
+
+env.close()

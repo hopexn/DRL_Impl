@@ -1,5 +1,6 @@
 import os
 
+import numpy as np
 import gym
 import keras.backend.tensorflow_backend as KTF
 import tensorflow as tf
@@ -22,23 +23,29 @@ print("Action space: {}".format(env.action_space.shape))
 nb_actions = env.action_space.shape[0]
 observation_shape = env.observation_space.shape
 
-from td3.TD3Agent import TD3Agent
-agent = TD3Agent(env.action_space, env.observation_space, nb_steps_warmup=2000)
+# from td3.TD3Agent import TD3Agent
+# agent = TD3Agent(env.action_space, env.observation_space, nb_steps_warmup=2000)
 
 # from ddpg.DDPGAgent import DDPGAgent
 # agent = DDPGAgent(env.action_space, env.observation_space, nb_steps_warmup=2000)
 
+from sac.SACAgent import SACAgent
+
+agent = SACAgent(env.action_space, env.observation_space, nb_steps_warmup=2000)
+
 print("Start training~")
-for episode in range(100):
+for episode in range(300):
     episode_rewards = 0
     observation = env.reset()
-    observation = observation.reshape(observation_shape)
+    observation = observation.reshape(observation_shape).astype(np.double)
     
     for step in range(200):
         action = agent.forward(observation)
         
         next_observation, reward, terminal, _ = env.step(action)
-        next_observation = next_observation.reshape(observation_shape)
+        
+        next_observation = next_observation.reshape(observation_shape).astype(np.double)
+        reward = reward.astype(np.double)
         
         agent.backward(observation, action, reward, terminal, next_observation)
         episode_rewards += reward
@@ -48,7 +55,7 @@ for episode in range(100):
         if terminal:
             break
     
-    print("Episode {}: {:.3f}".format(episode, episode_rewards))
+    print("Episode {}: {}".format(episode, episode_rewards))
 
 agent.training = False
 print("Start testing~")
@@ -70,4 +77,5 @@ for episode in range(20):
         if terminal:
             break
     
-    print("Episode {}: {:.3f}".format(episode, episode_rewards))
+    print("Episode {}: {}".format(episode, episode_rewards))
+
