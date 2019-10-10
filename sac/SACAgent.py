@@ -3,6 +3,7 @@ import tensorflow as tf
 
 from core.agent import Agent
 from core.memory_np import Memory
+from core.utils import polyak_averaging
 
 
 def gaussian_likelihood(x, mu, log_std):
@@ -22,7 +23,7 @@ class SACAgent(Agent):
         self.observation_space = observation_space
         self.gamma = gamma
         self.alpha = 0.2
-        self.polyak = 0.95
+        self.polyak = 0.995
         self.nb_steps_warmup = nb_steps_warmup
         self.value_network_lr = 3e-4
         self.soft_q_network_lr = 3e-4
@@ -30,8 +31,9 @@ class SACAgent(Agent):
         self.step_count = 0
         self.log_std_min = -20
         self.log_std_max = 2
+        self.min_entropy = -self.action_space.shape[0]
         
-        self.memory = Memory(capacity=20000,
+        self.memory = Memory(capacity=10000,
                              observation_shape=observation_space.shape,
                              action_shape=action_space.shape)
         
@@ -66,9 +68,10 @@ class SACAgent(Agent):
         if self.step_count >= self.nb_steps_warmup:
             self._update()
             
-            new_target_weigths = self.polyak_averaging(
+            new_target_weigths = polyak_averaging(
                 self.value_net.get_weights(),
-                self.target_value_net.get_weights()
+                self.target_value_net.get_weights(),
+                self.polyak
             )
             self.target_value_net.set_weights(new_target_weigths)
     
@@ -118,13 +121,6 @@ class SACAgent(Agent):
         
         return action, log_prob
     
-    def polyak_averaging(self, weights_list, target_weights_list):
-        new_target_weights_list = []
-        for weights, target_weights in zip(weights_list, target_weights_list):
-            new_target_weights = self.polyak * target_weights + (1 - self.polyak) * weights
-            new_target_weights_list.append(new_target_weights)
-        return new_target_weights_list
-    
     def _build_value_network(self):
         observation_shape = self.observation_space.shape
         
@@ -132,6 +128,7 @@ class SACAgent(Agent):
         
         model = tf.keras.models.Sequential([
             layers.Dense(32, activation='relu', input_shape=observation_shape),
+            layers.Dense(32, activation='relu'),
             layers.Dense(32, activation='relu'),
             layers.Dense(1)
         ])
@@ -150,6 +147,7 @@ class SACAgent(Agent):
         y = layers.Concatenate()([observation_tensor, action_tensor])
         y = layers.Dense(32, activation='relu')(y)
         y = layers.Dense(32, activation='relu')(y)
+        y = layers.Dense(32, activation='relu')(y)
         y = layers.Dense(1)(y)
         
         model = tf.keras.models.Model(inputs=[observation_tensor, action_tensor], outputs=y)
@@ -164,6 +162,7 @@ class SACAgent(Agent):
         layers = tf.keras.layers
         observation_tensor = layers.Input(shape=observation_shape)
         y = layers.Dense(32, activation='relu')(observation_tensor)
+        y = layers.Dense(32, activation='relu')(y)
         y = layers.Dense(32, activation='relu')(y)
         
         mean = layers.Dense(nb_actions, activation='tanh')(y)

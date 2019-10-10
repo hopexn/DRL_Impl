@@ -4,6 +4,7 @@ from rl.random import OrnsteinUhlenbeckProcess
 
 from core.agent import Agent
 from core.memory_np import Memory
+from core.utils import polyak_averaging
 
 
 class DDPGAgent(Agent):
@@ -44,7 +45,6 @@ class DDPGAgent(Agent):
         y = tf.keras.layers.Dense(32, activation='relu')(y)
         y = tf.keras.layers.Dense(32, activation='relu')(y)
         y = tf.keras.layers.Dense(self.nb_actions, activation='tanh')(y)
-        y = y * 2
         
         actor_model = tf.keras.Model(inputs=observation_tensor, outputs=y)
         actor_model.compile(optimizer=tf.keras.optimizers.Adam(lr=3e-4), loss='mse')
@@ -89,13 +89,13 @@ class DDPGAgent(Agent):
         self._update_actor(observations)
         
         # 更新critic的target网络
-        new_target_critic_weights_list = self.polyak_averaging(
-            self.critic_model.get_weights(), self.target_critic_model.get_weights())
+        new_target_critic_weights_list = polyak_averaging(
+            self.critic_model.get_weights(), self.target_critic_model.get_weights(), self.polyak)
         self.target_critic_model.set_weights(new_target_critic_weights_list)
         
         # 更新actor的target网络
-        new_target_actor_weights_list = self.polyak_averaging(
-            self.actor_model.get_weights(), self.target_actor_model.get_weights())
+        new_target_actor_weights_list = polyak_averaging(
+            self.actor_model.get_weights(), self.target_actor_model.get_weights(), self.polyak)
         self.target_actor_model.set_weights(new_target_actor_weights_list)
     
     def polyak_averaging(self, weights_list, target_weights_list):

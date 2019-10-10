@@ -32,7 +32,6 @@ observation_shape = env.observation_space.shape
 # agent = DDPGAgent(env.action_space, env.observation_space, nb_steps_warmup=2000)
 
 from sac.SACAgent import SACAgent
-
 agent = SACAgent(env.action_space, env.observation_space, nb_steps_warmup=2000)
 
 print("Start training~")
