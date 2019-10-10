@@ -1,8 +1,8 @@
 import os
 
-import numpy as np
 import gym
 import keras.backend.tensorflow_backend as KTF
+import numpy as np
 import tensorflow as tf
 
 # 指定第一块GPU可用
@@ -15,7 +15,9 @@ sess = tf.Session(config=config)
 
 KTF.set_session(sess)
 
-env = gym.make("Pendulum-v0")
+from core.env_wrapper import NormalizedWrapper
+
+env = NormalizedWrapper(gym.make("Pendulum-v0"))
 
 print("Observation space: {}".format(env.observation_space.shape))
 print("Action space: {}".format(env.action_space.shape))
@@ -78,4 +80,3 @@ for episode in range(20):
             break
     
     print("Episode {}: {}".format(episode, episode_rewards))
-

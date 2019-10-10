@@ -16,15 +16,13 @@ class SACAgent(Agent):
                  action_space,
                  observation_space,
                  gamma=0.99,
-                 nb_steps_warmup=2000,
-                 target_model_update=100):
+                 nb_steps_warmup=2000):
         super().__init__()
         self.action_space = action_space
         self.observation_space = observation_space
         self.gamma = gamma
-        self.target_model_update = target_model_update
-        self.alpha = 0.01
-        self.polyak = 0.995
+        self.alpha = 0.2
+        self.polyak = 0.95
         self.nb_steps_warmup = nb_steps_warmup
         self.value_network_lr = 3e-4
         self.soft_q_network_lr = 3e-4
