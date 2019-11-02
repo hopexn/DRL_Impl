@@ -1,21 +1,13 @@
 import os
 
 import gym
-import keras.backend.tensorflow_backend as KTF
 import numpy as np
 import tensorflow as tf
+from core.env_wrapper import NormalizedWrapper
 
 # 指定第一块GPU可用
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-
 tf.enable_eager_execution()
-config = tf.ConfigProto()
-config.gpu_options.allow_growth = True  # 不全部占满显存, 按需分配
-sess = tf.Session(config=config)
-
-KTF.set_session(sess)
-
-from core.env_wrapper import NormalizedWrapper
 
 env = NormalizedWrapper(gym.make("Pendulum-v0"))
 
@@ -35,27 +27,28 @@ from sac.SACAgent import SACAgent
 agent = SACAgent(env.action_space, env.observation_space, nb_steps_warmup=2000)
 
 print("Start training~")
-for episode in range(300):
+for episode in range(200):
     episode_rewards = 0
     observation = env.reset()
     observation = observation.reshape(observation_shape).astype(np.double)
-    
+
     for step in range(200):
         action = agent.forward(observation)
-        
+
         next_observation, reward, terminal, _ = env.step(action)
-        
-        next_observation = next_observation.reshape(observation_shape).astype(np.double)
+
+        next_observation = next_observation.reshape(observation_shape).astype(
+            np.double)
         reward = reward.astype(np.double)
-        
+
         agent.backward(observation, action, reward, terminal, next_observation)
         episode_rewards += reward
-        
+
         observation = next_observation
-        
+
         if terminal:
             break
-    
+
     print("Episode {}: {}".format(episode, episode_rewards))
 
 agent.training = False
@@ -64,18 +57,18 @@ for episode in range(20):
     episode_rewards = 0
     observation = env.reset()
     observation = observation.reshape(observation_shape)
-    
+
     for step in range(200):
         env.render()
         action = agent.forward(observation)
-        
+
         next_observation, reward, terminal, _ = env.step(action)
         next_observation = next_observation.reshape(observation_shape)
-        
+
         episode_rewards += reward
         observation = next_observation
-        
+
         if terminal:
             break
-    
+
     print("Episode {}: {}".format(episode, episode_rewards))
