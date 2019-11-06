@@ -12,18 +12,27 @@ class TD3Agent(Agent):
                  observation_space,
                  gamma=0.99,
                  nb_steps_warmup=2000,
+                 sigma=0.3,
+                 polyak=0.995,
+                 pi_lr=0.001,
+                 q_lr=0.001,
+                 batch_size=100,
+                 action_noise=0.1,
+                 target_noise=0.2,
+                 noise_clip=0.5,
+                 policy_delay=2,
                  training=True):
         super().__init__()
         self.gamma = gamma
-        self.sigma = 0.3
-        self.polyak = 0.995
-        self.pi_lr = 0.001
-        self.q_lr = 0.001
-        self.batch_size = 100
-        self.action_noise = 0.1
-        self.target_noise = 0.2
-        self.noise_clip = 0.5
-        self.policy_delay = 2
+        self.sigma = sigma
+        self.polyak = polyak
+        self.pi_lr = pi_lr
+        self.q_lr = q_lr
+        self.batch_size = batch_size
+        self.action_noise = action_noise
+        self.target_noise = target_noise
+        self.noise_clip = noise_clip
+        self.policy_delay = policy_delay
         
         self.action_space = action_space
         self.nb_actions = action_space.shape[0]

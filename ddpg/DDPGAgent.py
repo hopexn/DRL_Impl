@@ -1,6 +1,6 @@
 import numpy as np
 import tensorflow as tf
-from rl.random import OrnsteinUhlenbeckProcess
+from core.random import OrnsteinUhlenbeckProcess
 
 from core.agent import Agent
 from core.memory_np import Memory
@@ -12,16 +12,17 @@ class DDPGAgent(Agent):
                  action_space,
                  observation_space,
                  gamma=0.99,
-                 nb_steps_warmup=2000,
+                 nb_steps_warm_up=2000,
+                 polyak=0.99,
                  training=True):
         super().__init__()
         self.gamma = gamma
-        self.polyak = 0.99
+        self.polyak = polyak
         
         self.action_space = action_space
         self.nb_actions = action_space.shape[0]
         self.observation_shape = observation_space.shape
-        self.nb_steps_warmup = nb_steps_warmup
+        self.nb_steps_warm_up = nb_steps_warm_up
         self.training = training
         
         self.memory = Memory(capacity=10000,
@@ -64,7 +65,7 @@ class DDPGAgent(Agent):
     def forward(self, observation):
         self.step_count += 1
         
-        if self.step_count < self.nb_steps_warmup:
+        if self.step_count < self.nb_steps_warm_up:
             return self.action_space.sample()
         else:
             observation = np.expand_dims(observation, axis=0)
@@ -77,7 +78,7 @@ class DDPGAgent(Agent):
     def backward(self, observation, action, reward, terminal, next_observation):
         self.memory.store_transition(observation, action, reward, terminal, next_observation)
         
-        if self.step_count < self.nb_steps_warmup:
+        if self.step_count < self.nb_steps_warm_up:
             return
         else:
             self._update()
