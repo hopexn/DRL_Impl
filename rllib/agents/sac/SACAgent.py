@@ -5,7 +5,7 @@ import tensorflow_probability.distributions as tfd
 
 from core.agent import Agent
 from core.memory_np import Memory
-from core.utils import polyak_averaging
+from utils.common import polyak_averaging
 
 
 def gaussian_likelihood(x, mu, log_std):

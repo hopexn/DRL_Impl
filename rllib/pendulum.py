@@ -3,7 +3,7 @@ import os
 import gym
 import numpy as np
 import tensorflow as tf
-from core.env_wrapper import NormalizedWrapper
+from utils.common import NormalizedWrapper
 
 # 指定第一块GPU可用
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
@@ -23,7 +23,7 @@ observation_shape = env.observation_space.shape
 # from ddpg.DDPGAgent import DDPGAgent
 # agent = DDPGAgent(env.action_space, env.observation_space, nb_steps_warmup=2000)
 
-from sac.SACAgent import SACAgent
+from agents.sac.SACAgent import SACAgent
 agent = SACAgent(env.action_space, env.observation_space, nb_steps_warmup=2000)
 
 print("Start training~")

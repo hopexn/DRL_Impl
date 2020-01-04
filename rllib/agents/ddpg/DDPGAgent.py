@@ -1,10 +1,10 @@
 import numpy as np
 import tensorflow as tf
-from core.random import OrnsteinUhlenbeckProcess
 
 from core.agent import Agent
-from core.memory_np import Memory
-from core.utils import polyak_averaging
+from core.memory import MemoryNP
+from core.random import OrnsteinUhlenbeckProcess
+from utils.common import polyak_averaging
 
 
 class DDPGAgent(Agent):
@@ -13,7 +13,7 @@ class DDPGAgent(Agent):
                  observation_space,
                  gamma=0.99,
                  nb_steps_warm_up=2000,
-                 polyak=0.99,
+                 polyak=0.995,
                  training=True):
         super().__init__()
         self.gamma = gamma
@@ -25,9 +25,9 @@ class DDPGAgent(Agent):
         self.nb_steps_warm_up = nb_steps_warm_up
         self.training = training
         
-        self.memory = Memory(capacity=10000,
-                             observation_shape=self.observation_shape,
-                             action_shape=self.action_space.shape)
+        self.memory = MemoryNP(capacity=10000,
+                               observation_shape=self.observation_shape,
+                               action_shape=self.action_space.shape)
         
         self.actor_model, self.critic_model = self._build_network()
         self.target_actor_model, self.target_critic_model = self._build_network()
@@ -106,11 +106,6 @@ class DDPGAgent(Agent):
             new_target_weights_list.append(new_target_weights)
         return new_target_weights_list
     
-    def _update_critic(self, observations, actions, rewards, terminals, next_observations):
-        q_values_next = self.target_critic_model([next_observations, self.actor_model(next_observations)])
-        target_q_values = rewards + self.gamma * q_values_next
-        self.critic_model.fit([observations, actions], target_q_values, verbose=0)
-    
     @tf.function
     def _update_actor(self, observations):
         with tf.GradientTape() as tape:
@@ -120,3 +115,8 @@ class DDPGAgent(Agent):
         
         actor_grads = tape.gradient(loss, self.actor_model.trainable_weights)
         self.actor_model.optimizer.apply_gradients(zip(actor_grads, self.actor_model.trainable_weights))
+    
+    def _update_critic(self, observations, actions, rewards, terminals, next_observations):
+        q_values_next = self.target_critic_model([next_observations, self.actor_model(next_observations)])
+        target_q_values = rewards + self.gamma * q_values_next
+        self.critic_model.fit([observations, actions], target_q_values, verbose=0)

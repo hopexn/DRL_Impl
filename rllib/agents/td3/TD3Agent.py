@@ -3,7 +3,7 @@ import tensorflow as tf
 
 from core.agent import Agent
 from core.memory_np import Memory
-from core.utils import polyak_averaging
+from utils.common import polyak_averaging
 
 
 class TD3Agent(Agent):
