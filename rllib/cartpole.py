@@ -16,7 +16,7 @@ agent = DQNAgent(
     action_space=env.action_space,
     observation_space=env.observation_space,
     train_policy=train_policy,
-    dueling_type='avg'
+    dueling_type='max'
 )
 
 print("Start training~")

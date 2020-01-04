@@ -98,7 +98,7 @@ class DQNAgent(Agent):
                 output_shape=(self.nb_actions,))(y)
         elif self.dueling_type == 'max':
             output_layer = tf.keras.layers.Lambda(
-                lambda a: tf.expand_dims(a[:, 0], -1) + a[:, 1:] - tf.math.max(a[:, 1:], axis=1, keepdims=True),
+                lambda a: tf.expand_dims(a[:, 0], -1) + a[:, 1:] - tf.reduce_max(a[:, 1:], axis=1, keepdims=True),
                 output_shape=(self.nb_actions,))(y)
         elif self.dueling_type == 'naive':
             output_layer = tf.keras.layers.Lambda(
