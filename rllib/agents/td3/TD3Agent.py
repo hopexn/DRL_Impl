@@ -2,16 +2,16 @@ import numpy as np
 import tensorflow as tf
 
 from core.agent import Agent
-from core.memory_np import Memory
+from core.memory import MemoryNP
 from utils.common import polyak_averaging
 
 
 class TD3Agent(Agent):
     def __init__(self,
-                 action_space,
                  observation_space,
+                 action_space,
                  gamma=0.99,
-                 nb_steps_warmup=2000,
+                 nb_steps_warm_up=2000,
                  sigma=0.3,
                  polyak=0.995,
                  pi_lr=0.001,
@@ -22,7 +22,7 @@ class TD3Agent(Agent):
                  noise_clip=0.5,
                  policy_delay=2,
                  training=True):
-        super().__init__()
+        super().__init__(observation_space, action_space)
         self.gamma = gamma
         self.sigma = sigma
         self.polyak = polyak
@@ -37,12 +37,14 @@ class TD3Agent(Agent):
         self.action_space = action_space
         self.nb_actions = action_space.shape[0]
         self.observation_shape = observation_space.shape
-        self.nb_steps_warmup = nb_steps_warmup
+        self.nb_steps_warm_up = nb_steps_warm_up
         self.training = training
         
-        self.memory = Memory(capacity=10000,
-                             observation_shape=self.observation_shape,
-                             action_shape=self.action_space.shape)
+        self.memory = MemoryNP(
+            capacity=10000,
+            observation_shape=self.observation_shape,
+            action_shape=self.action_space.shape
+        )
         
         self.actor_model, self.critic_model1, self.critic_model2 = self._build_network()
         
@@ -88,21 +90,24 @@ class TD3Agent(Agent):
     def forward(self, observation):
         self.step_count += 1
         
-        if self.step_count < self.nb_steps_warmup:
+        if self.step_count < self.nb_steps_warm_up:
             return self.action_space.sample()
         else:
             observation = np.expand_dims(observation, axis=0)
             action = self.actor_model.predict(observation)
             action = action.reshape(self.nb_actions)
             if self.training:
-                action = action + np.clip(np.random.normal(0.0, self.action_noise, self.nb_actions),
-                                          -self.noise_clip, self.noise_clip)
+                action = action + np.clip(
+                    np.random.normal(0.0, self.action_noise, self.nb_actions),
+                    -self.noise_clip,
+                    self.noise_clip
+                )
             return action
     
     def backward(self, observation, action, reward, terminal, next_observation):
         self.memory.store_transition(observation, action, reward, terminal, next_observation)
         
-        if self.step_count < self.nb_steps_warmup:
+        if self.step_count < self.nb_steps_warm_up:
             return
         else:
             self._update()
@@ -157,3 +162,19 @@ class TD3Agent(Agent):
         
         actor_grads = tape.gradient(loss, self.actor_model.trainable_weights)
         self.actor_model.optimizer.apply_gradients(zip(actor_grads, self.actor_model.trainable_weights))
+    
+    def switch_mode(self, training=None):
+        """
+        :param training:  agent所处的模式，
+            training=True： 训练模式
+            training=False: 测试模式
+        """
+        if training is None:
+            self.training = ~self.training
+        else:
+            self.training = training
+        
+        if self.training:
+            print("Switch to train mode.")
+        else:
+            print("Switch to test mode.")

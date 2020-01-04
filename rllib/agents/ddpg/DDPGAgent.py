@@ -3,23 +3,21 @@ import tensorflow as tf
 
 from core.agent import Agent
 from core.memory import MemoryNP
-from core.random import OrnsteinUhlenbeckProcess
 from utils.common import polyak_averaging
 
 
 class DDPGAgent(Agent):
     def __init__(self,
-                 action_space,
                  observation_space,
+                 action_space,
                  gamma=0.99,
                  nb_steps_warm_up=2000,
                  polyak=0.995,
                  training=True):
-        super().__init__()
+        super().__init__(observation_space, action_space)
         self.gamma = gamma
         self.polyak = polyak
         
-        self.action_space = action_space
         self.nb_actions = action_space.shape[0]
         self.observation_shape = observation_space.shape
         self.nb_steps_warm_up = nb_steps_warm_up
@@ -35,7 +33,6 @@ class DDPGAgent(Agent):
         self.target_critic_model.set_weights(self.critic_model.get_weights())
         
         self.step_count = 0
-        self.random_process = OrnsteinUhlenbeckProcess(size=self.nb_actions, theta=0.15, mu=0., sigma=0.3)
     
     def _build_network(self):
         action_tensor = tf.keras.layers.Input(shape=(self.nb_actions,), dtype=tf.float64)
@@ -72,7 +69,7 @@ class DDPGAgent(Agent):
             action = self.actor_model.predict(observation)
             action = action.reshape(self.nb_actions)
             if self.training:
-                action = action + self.random_process.sample()
+                action = action + 0.3 * np.random.random()
             return action
     
     def backward(self, observation, action, reward, terminal, next_observation):
@@ -120,3 +117,19 @@ class DDPGAgent(Agent):
         q_values_next = self.target_critic_model([next_observations, self.actor_model(next_observations)])
         target_q_values = rewards + self.gamma * q_values_next
         self.critic_model.fit([observations, actions], target_q_values, verbose=0)
+    
+    def switch_mode(self, training=None):
+        """
+        :param training:  agent所处的模式，
+            training=True： 训练模式
+            training=False: 测试模式
+        """
+        if training is None:
+            self.training = ~self.training
+        else:
+            self.training = training
+        
+        if self.training:
+            print("Switch to train mode.")
+        else:
+            print("Switch to test mode.")
